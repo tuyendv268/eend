@@ -1,0 +1,9 @@
+/amicorpus/
+/pretrained_models/
+practice.ipynb
+download_data.sh
+/exp_large/
+/.ipynb_checkpoints/
+/__pycache__/
+/*/__pycache__/
+/*/*/__pycache__/
