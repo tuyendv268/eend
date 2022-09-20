@@ -37,6 +37,7 @@ def gen_frame_indices(
     if use_last_samples and i*step + size < data_length:
         if data_length - (i + 1) * step - subsampling * label_delay > 0:
             yield (i + 1) * step, data_length
+
 def transform(
         Y,
         transform_type=None,
@@ -77,7 +78,15 @@ def transform(
         sr = 8000
         n_mels = 23
         mel_basis = librosa.filters.mel(sr, n_fft, n_mels)
-        Y = np.dot(Y ** 2, mel_basis.T)
+        # Y = np.dot(Y ** 2, mel_basis.T)
+        
+        device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
+        # print("device: ", device)
+        tmp_1 = torch.tensor(Y ** 2, device=device, dtype=torch.double)
+        tmp_2 = torch.tensor(mel_basis.T, device=device, dtype=torch.double)
+        Y = torch.mm(tmp_1, tmp_2).cpu().numpy()
+        
+        
         Y = np.log10(np.maximum(Y, 1e-10))
         mean = np.mean(Y, axis=0)
         Y = Y - mean
@@ -112,7 +121,6 @@ def transform(
     else:
         raise ValueError('Unknown transform_type: %s' % transform_type)
     return Y.astype(dtype)
-
 
 def subsample(Y, T, subsampling=1):
     """ Frame subsampling
@@ -159,31 +167,31 @@ def get_labeledSTFT(audio,
     # print(rate)
     Y = stft(datas, frame_size, frame_shift)
     
-    print(f"start_time: {start*frame_shift/rate}")
-    print(f"end_time: {end*frame_shift/rate}")
+    # print(f"start_time: {start*frame_shift/rate}")
+    # print(f"end_time: {end*frame_shift/rate}")
     a = (audio.metadata["st"] >= start*frame_shift/rate) & (audio.metadata["et"] < end*frame_shift/rate)
     b = (audio.metadata["st"] < end*frame_shift/rate) & (audio.metadata["et"] >= end*frame_shift/rate)
     
     segments = audio.metadata[a|b]
-    print(f"segments: \n{segments}")
+    # print(f"segments: \n{segments}")
     speaker_ids = segments["spk_id"].unique().tolist()
-    print(speaker_ids)
+    # print(speaker_ids)
 
     if n_speakers ==None:
         n_speakers = len(speaker_ids)
-    print(n_speakers)
+    # print(n_speakers)
     # print(f"Y shape: {Y.shape}")
     T = np.zeros((Y.shape[0], n_speakers), dtype=np.int8)
     
     for index in segments.index:
-        print(f'spk_id: {segments["spk_id"][index]}')
+        # print(f'spk_id: {segments["spk_id"][index]}')
         speaker_idx = speaker_ids.index(segments["spk_id"][index])
-        print(f'speaker_index: {speaker_idx}')
+        # print(f'speaker_index: {speaker_idx}')
         
         start_frame = np.rint(segments["st"][index] * rate / frame_shift).astype(int) - start
         end_frame = np.rint(segments["et"][index] * rate / frame_shift).astype(int) - start
-        print(f"start_frame: {start_frame}")
-        print(f"end_frame: {end_frame}")
+        # print(f"start_frame: {start_frame}")
+        # print(f"end_frame: {end_frame}")
         
         T[start_frame:end_frame, speaker_idx] = 1
         # print(T[start_frame:end_frame, speaker_idx])

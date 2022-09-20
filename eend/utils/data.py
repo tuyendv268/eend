@@ -1,6 +1,7 @@
 import os
 from glob import glob
 import logging
+from tqdm import tqdm
 
 from eend.utils.audio import Audio
 
@@ -19,9 +20,9 @@ class Data():
         self.load_data()
         
     def load_data(self):
-        logger = logging.getLogger(__name__)
-        logger.info("-------- load data ----------")
-        for rttm_path in self.rttm_files:
+        # logger = logging.getLogger(__name__)
+        print("-------- load data ----------")
+        for rttm_path in tqdm(self.rttm_files):
             file = rttm_path.split("/")[-1]
             audio_name = file.split(".")[0]
             
@@ -35,6 +36,6 @@ class Data():
                         sample_rate=self.sample_rate
                     )
 
-        logger.info("---------- done ----------")
+        print("---------- done ----------")
         
         

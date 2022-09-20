@@ -8,6 +8,7 @@ from tqdm import tqdm
 import logging
 
 import torch
+import sys
 from torch import optim
 from torch import nn
 from torch.utils.data import DataLoader
@@ -16,26 +17,42 @@ from eend.pytorch_backend.models import TransformerModel, NoamScheduler
 from eend.pytorch_backend.diarization_dataset import DiarizationDataset 
 from eend.pytorch_backend.loss import batch_pit_loss, report_diarization_error
 
+def my_collate(batch):
+    data, target = list(zip(*batch))
+    return [data, target]
+
 
 def train(args):
     """ Training model with pytorch backend.
     This function is called from eend/bin/train.py with
     parsed command-line arguments.
     """
-    # Logger settings====================================================
-    formatter = logging.Formatter("[ %(levelname)s : %(asctime)s ] - %(message)s")
-    logging.basicConfig(level=logging.DEBUG, format="[ %(levelname)s : %(asctime)s ] - %(message)s")
-    logger = logging.getLogger("Pytorch")
-    fh = logging.FileHandler(args.model_save_dir + "/train.log", mode='w')
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
+    # logging settings====================================================
+    # formatter = logging.Formatter("[ %(levelname)s : %(asctime)s ] - %(message)s")
+    # logging.basicConfig(level=logging.DEBUG, format="[ %(levelname)s : %(asctime)s ] - %(message)s")
+    # logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+    # logging = logging.getlogging("Pytorch")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler(args.model_save_dir + "/train.log", mode='w'),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+    # fh = logging.FileHandler(args.model_save_dir + "/train.log", mode='w')
+    # fh.setFormatter(formatter)
+    # logging.addHandler(fh)
     # ===================================================================
-    logger.info(str(args))
+    logging.info(str(args))
 
     np.random.seed(args.seed)
+    print(f"seed: {args.seed}")
     os.environ['PYTORCH_SEED'] = str(args.seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    
+    device = torch.device("cuda:0" if (torch.cuda.is_available() and args.gpu > 0) else "cpu")
 
     train_set = DiarizationDataset(
         data_path=args.train_data_dir,
@@ -51,7 +68,7 @@ def train(args):
         n_speakers=args.num_speakers,
         )
     dev_set = DiarizationDataset(
-        data_path=args.train_data_dir,
+        data_path=args.valid_data_dir,
         chunk_size=args.num_frames,
         context_size=args.context_size,
         input_transform=args.input_transform,
@@ -80,12 +97,13 @@ def train(args):
     else:
         raise ValueError('Possible model_type is "Transformer"')
     
-    device = torch.device("cuda" if (torch.cuda.is_available() and args.gpu > 0) else "cpu")
+    device = torch.device("cuda:0" if (torch.cuda.is_available() and args.gpu > 0) else "cpu")
     if device.type == "cuda":
         model = nn.DataParallel(model, list(range(args.gpu)))
     model = model.to(device)
-    logger.info('Prepared model')
-    logger.info(model)
+    logging.info(f'device: {device}')
+    logging.info('Prepared model')
+    logging.info(model)
 
     # Setup optimizer
     if args.optimizer == 'adam':
@@ -105,15 +123,16 @@ def train(args):
                                   warmup_steps=args.noam_warmup_steps)
 
     # Init/Resume
-    if args.initmodel:
-        logger.info(f"Load model from {args.initmodel}")
-        model.load_state_dict(torch.load(args.initmodel))
+    # if args.initmodel:
+    #     # logging.info(f"Load model from {args.initmodel}")
+    #     model.load_state_dict(torch.load(args.initmodel))
 
     train_iter = DataLoader(
             train_set,
             batch_size=args.batchsize,
             shuffle=True,
             num_workers=0,
+            collate_fn=my_collate
             )
 
     dev_iter = DataLoader(
@@ -121,6 +140,7 @@ def train(args):
             batch_size=args.batchsize,
             shuffle=False,
             num_workers=0,
+            collate_fn=my_collate
             )
 
     # Training
@@ -153,6 +173,7 @@ def train(args):
             num_total += 1
         loss_epoch /= num_total
         
+        
         model.eval()
         with torch.no_grad():
             stats_avg = {}
@@ -170,11 +191,12 @@ def train(args):
             stats_avg['DER'] = stats_avg['diarization_error'] / stats_avg['speaker_scored'] * 100
             for k in stats_avg.keys():
                 stats_avg[k] = round(stats_avg[k], 2)
+        
+        if epoch % 10 == 0:
+            model_filename = os.path.join(args.model_save_dir, f"transformer{epoch}.th")
+            torch.save(model.state_dict(), model_filename)
 
-        model_filename = os.path.join(args.model_save_dir, f"transformer{epoch}.th")
-        torch.save(model.state_dict(), model_filename)
-
-        logger.info(f"Epoch: {epoch:3d}, LR: {optimizer.param_groups[0]['lr']:.7f},\
+        logging.info(f"Epoch: {epoch:3d}, LR: {optimizer.param_groups[0]['lr']:.7f},\
             Training Loss: {loss_epoch:.5f}, Dev Stats: {stats_avg}")
 
-    logger.info('Finished!')
+    logging.info('Finished!')

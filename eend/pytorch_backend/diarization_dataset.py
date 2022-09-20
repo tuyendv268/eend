@@ -50,6 +50,8 @@ class DiarizationDataset(Dataset):
                     label_delay=0,
                     subsampling=self.subsampling):
                 self.chunk_indices.append((key, st*self.subsampling, ed*self.subsampling))
+        
+        self.chunk_indices = self.chunk_indices[:-1]
         print(len(self.chunk_indices))
     
     def __len__(self):
@@ -65,7 +67,7 @@ class DiarizationDataset(Dataset):
             self.frame_shift,
             self.n_speakers)
         # Y: (frame, num_ceps)
-        Y = transform(Y, self.input_transform)
+        Y = transform(Y,self.input_transform)
         # Y_spliced: (frame, num_ceps * (context_size * 2 + 1))
         Y_spliced = splice(Y, self.context_size)
         # Y_ss: (frame / subsampling, num_ceps * (context_size * 2 + 1))

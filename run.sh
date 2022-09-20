@@ -1,14 +1,14 @@
 #!/bin/bash
 
-ulimit -S -n 4096
+# ulimit -S -n 64
 
 export PYTHONPATH=`pwd`:$PYTHONPATH
 
 exp_dir=exp_large
 conf_dir=conf/large
 
-train_dir=/home/tuyendv/Desktop/EEND_PyTorch/amicorpus
-dev_dir=/home/tuyendv/Desktop/EEND_PyTorch/amicorpus
+train_dir=/home/tuyendv/projects/speaker-diazation/diarization-data/train
+dev_dir=/home/tuyendv/projects/speaker-diazation/diarization-data/test
 model_dir=$exp_dir/models
 train_conf=$conf_dir/train.yaml
 
