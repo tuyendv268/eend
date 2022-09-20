@@ -7,7 +7,7 @@ max_epochs: 200
 gradclip: 5
 batchsize: 32
 hidden_size: 256
-num_frames: 500
+num_frames: 50
 num_speakers: 4
 input_transform: logmel23_mn
 optimizer: noam

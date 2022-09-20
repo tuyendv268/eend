@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 from eend.utils.utils import *
 import librosa
+from tqdm import tqdm
 
 from eend.utils.data import Data
 
@@ -33,9 +34,14 @@ class DiarizationDataset(Dataset):
         self.datas = Data(path=data_path, sample_rate=self.rate)
         
         self.init_chunks()
+        
+        self.Y, self.T = self.preprocess_data()
+        self.datas = None
+        
     def init_chunks(self):
         self.chunk_indices = []
-        for key in self.datas.audios:
+        print("------------- init chunks -------------")
+        for key in tqdm(self.datas.audios):
             audio = self.datas.audios[key]
 
             # data_len = int(audio.metadata["st"].to_numpy() * self.rate / self.frame_shift)
@@ -52,12 +58,27 @@ class DiarizationDataset(Dataset):
                 self.chunk_indices.append((key, st*self.subsampling, ed*self.subsampling))
         
         self.chunk_indices = self.chunk_indices[:-1]
-        print(len(self.chunk_indices))
+        print("chunks: ",len(self.chunk_indices))
+        print("------------- done -------------")
+    
+    def preprocess_data(self):
+        Y, T = [], []
+        print("------------- preprocess data -------------")
+        for index in tqdm(range(len(self.chunk_indices))):
+            Y_ss, T_ss = self.getchunk(index)
+            Y.append(tuple(Y_ss))
+            T.append(tuple(T_ss))            
+        print("-------------- done ---------------")
+
+        return torch.tensor(Y).float(), torch.tensor(T).float()
     
     def __len__(self):
         return len(self.chunk_indices)
     
-    def __getitem__(self, i):
+    def __getitem__(self, index):
+        return self.Y[index], self.T[index]
+    
+    def getchunk(self, i):
         key, st, ed = self.chunk_indices[i]
         Y, T = get_labeledSTFT(
             self.datas.audios[key],
@@ -73,6 +94,6 @@ class DiarizationDataset(Dataset):
         # Y_ss: (frame / subsampling, num_ceps * (context_size * 2 + 1))
         Y_ss, T_ss = subsample(Y_spliced, T, self.subsampling)
 
-        Y_ss = torch.from_numpy(Y_ss).float()
-        T_ss = torch.from_numpy(T_ss).float()
-        return Y_ss, T_ss
+        # Y_ss = torch.from_numpy(Y_ss).float()
+        # T_ss = torch.from_numpy(T_ss).float()
+        return Y_ss.tolist(), T_ss.tolist()

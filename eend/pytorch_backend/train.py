@@ -63,7 +63,7 @@ def train(args):
         frame_shift=args.frame_shift,
         subsampling=args.subsampling,
         rate=args.sampling_rate,
-        use_last_samples=True,
+        use_last_samples=False,
         label_delay=args.label_delay,
         n_speakers=args.num_speakers,
         )
@@ -76,7 +76,7 @@ def train(args):
         frame_shift=args.frame_shift,
         subsampling=args.subsampling,
         rate=args.sampling_rate,
-        use_last_samples=True,
+        use_last_samples=False,
         label_delay=args.label_delay,
         n_speakers=args.num_speakers,
         )
