@@ -1,6 +1,6 @@
 import os
 from glob import glob
-import logging
+import multiprocessing
 from tqdm import tqdm
 
 from eend.utils.audio import Audio
@@ -17,12 +17,53 @@ class Data():
         self.wav_files = glob(audio_path)
         self.audios = {}
         
-        self.load_data()
+        self.load_data_parallel()
         
-    def load_data(self):
-        # logger = logging.getLogger(__name__)
-        print("-------- load data ----------")
-        for rttm_path in tqdm(self.rttm_files):
+    # def load_data(self):
+    #     # logger = logging.getLogger(__name__)
+    #     print("-------- load data ----------")
+    #     for rttm_path in tqdm(self.rttm_files):
+    #         file = rttm_path.split("/")[-1]
+    #         audio_name = file.split(".")[0]
+            
+    #         for audio_path in self.wav_files:
+    #             if audio_name not in audio_path:
+    #                 continue
+                
+    #             self.audios[audio_name] = Audio(
+    #                     rttm_path=rttm_path, 
+    #                     audio_path=audio_path,
+    #                     sample_rate=self.sample_rate
+    #                 )
+
+    #     print("---------- done ----------")
+    def gen_params(self):
+        num_core = 2
+        print(f"num_core: {num_core}")
+        step = int(len(self.rttm_files)/num_core)
+        
+        params = [self.rttm_files[i:i+step] for i in range(0, len(self.rttm_files),step)]
+        return params
+    
+    def load_data_parallel(self):
+        params = self.gen_params()
+        p = multiprocessing.Pool(processes=len(params))
+        print("-------- load data parallel----------")
+        result = p.map(self.load_data, params)
+        
+        p.close()
+        p.join()
+        print("---------- done ----------")
+        
+        for _dict in result:
+            for key, value in _dict.items():
+                self.audios[key] = value
+        
+        
+    
+    def load_data(self, rttm_files):
+        audios = {}
+        for rttm_path in tqdm(rttm_files):
             file = rttm_path.split("/")[-1]
             audio_name = file.split(".")[0]
             
@@ -30,12 +71,11 @@ class Data():
                 if audio_name not in audio_path:
                     continue
                 
-                self.audios[audio_name] = Audio(
+                audios[audio_name] = Audio(
                         rttm_path=rttm_path, 
                         audio_path=audio_path,
                         sample_rate=self.sample_rate
                     )
 
-        print("---------- done ----------")
-        
+        return audios
         
