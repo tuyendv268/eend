@@ -86,7 +86,7 @@ def transform(
         tmp_2 = torch.tensor(mel_basis.T, device=device, dtype=torch.double)
         Y = torch.mm(tmp_1, tmp_2)
         
-        Y = torch.log10(torch.maximum(Y, torch.tensor(1e-10)))
+        Y = torch.log10(torch.maximum(Y, torch.tensor(1e-10, device=device)))
         mean = torch.mean(Y, dim=0)
         
         # Y = np.log10(np.maximum(Y, 1e-10))
