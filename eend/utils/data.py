@@ -10,8 +10,8 @@ class Data():
     def __init__(self, path, sample_rate):
         self.path = path
         self.sample_rate = sample_rate
-        rttm_path = os.path.join(path, "rttm/*.rttm")
-        audio_path = os.path.join(path, "wav/*/audio/*")
+        rttm_path = os.path.join(path, "*.rttm")
+        audio_path = os.path.join("/home/tuyendv/projects/diarization-data", "wav/*/audio/*")
         
         self.rttm_files = glob(rttm_path)
         self.wav_files = glob(audio_path)
@@ -38,9 +38,9 @@ class Data():
 
     #     print("---------- done ----------")
     def gen_params(self):
-        num_core = 2
+        num_core = 8
         print(f"num_core: {num_core}")
-        step = int(len(self.rttm_files)/num_core)
+        step = int(len(self.rttm_files)/num_core) + 1
         
         params = [self.rttm_files[i:i+step] for i in range(0, len(self.rttm_files),step)]
         return params
@@ -55,9 +55,11 @@ class Data():
         p.join()
         print("---------- done ----------")
         
-        for _dict in result:
+        for index in tqdm(range(len(result))):
+            _dict = result[index]
             for key, value in _dict.items():
                 self.audios[key] = value
+            _dict = None
         
         
     

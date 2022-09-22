@@ -66,14 +66,16 @@ class DiarizationDataset(Dataset):
         print("------------- preprocess data -------------")
         for index in tqdm(range(len(self.chunk_indices))):
             Y_ss, T_ss = self.getchunk(index)
-            Y.append(tuple(Y_ss))
-            T.append(tuple(T_ss))            
+            # if Y_ss == None or T_ss == None:
+            #     continue
+            Y.append(Y_ss)
+            T.append(T_ss)            
         print("-------------- done ---------------")
 
         return torch.tensor(Y).float(), torch.tensor(T).float()
     
     def __len__(self):
-        return len(self.chunk_indices)
+        return len(self.Y)
     
     def __getitem__(self, index):
         return self.Y[index], self.T[index]
@@ -87,6 +89,8 @@ class DiarizationDataset(Dataset):
             self.frame_size,
             self.frame_shift,
             self.n_speakers)
+        # if Y == None or T == None:
+        #     return None, None
         # Y: (frame, num_ceps)
         Y = transform(Y,self.input_transform)
         # Y_spliced: (frame, num_ceps * (context_size * 2 + 1))

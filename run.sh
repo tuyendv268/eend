@@ -7,8 +7,8 @@ export PYTHONPATH=`pwd`:$PYTHONPATH
 exp_dir=exp_large
 conf_dir=conf/large
 
-train_dir=/home/tuyendv/Desktop/eend_pytorch/amicorpus
-dev_dir=/home/tuyendv/Desktop/eend_pytorch/amicorpus
+train_dir=/home/tuyendv/projects/diarization-data/rttms/dev
+dev_dir=/home/tuyendv/projects/diarization-data/rttms/dev
 model_dir=$exp_dir/models
 train_conf=$conf_dir/train.yaml
 

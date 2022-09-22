@@ -64,33 +64,42 @@ def transform(
         sr = 16000
         n_mels = 40
         mel_basis = librosa.filters.mel(sr, n_fft, n_mels)
-        Y = np.dot(Y ** 2, mel_basis.T)
-        Y = np.log10(np.maximum(Y, 1e-10))
+        # Y = np.dot(Y ** 2, mel_basis.T)
+        # Y = np.log10(np.maximum(Y, 1e-10))
+        
+        device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
+        # print("device: ", device)
+        tmp_1 = torch.tensor(Y ** 2, device=device, dtype=torch.float32)
+        tmp_2 = torch.tensor(mel_basis.T, device=device, dtype=torch.float32)
+        Y = torch.mm(tmp_1, tmp_2)
+        
+        Y = torch.log10(torch.maximum(Y, torch.tensor(1e-10, device=device)))
+        Y = Y.cpu().numpy()
     elif transform_type == 'logmel23':
         n_fft = 2 * (Y.shape[1] - 1)
         sr = 8000
         n_mels = 23
         mel_basis = librosa.filters.mel(sr, n_fft, n_mels)
         Y = np.dot(Y ** 2, mel_basis.T)
-        Y = np.log10(np.maximum(Y, torch.tensor(1e-10)))
+        Y = np.log10(np.maximum(Y, 1e-10))
     elif transform_type == 'logmel23_mn':
         n_fft = 2 * (Y.shape[1] - 1)
         sr = 8000
         n_mels = 23
         mel_basis = librosa.filters.mel(sr, n_fft, n_mels)
-        # Y = np.dot(Y ** 2, mel_basis.T)
+        Y = np.dot(Y ** 2, mel_basis.T)
         
-        device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
+        # device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
         # print("device: ", device)
-        tmp_1 = torch.tensor(Y ** 2, device=device, dtype=torch.double)
-        tmp_2 = torch.tensor(mel_basis.T, device=device, dtype=torch.double)
-        Y = torch.mm(tmp_1, tmp_2)
+        # tmp_1 = torch.tensor(Y ** 2, device=device, dtype=torch.float)
+        # tmp_2 = torch.tensor(mel_basis.T, device=device, dtype=torch.float)
+        # Y = torch.mm(tmp_1, tmp_2)
         
-        Y = torch.log10(torch.maximum(Y, torch.tensor(1e-10, device=device)))
-        mean = torch.mean(Y, dim=0)
+        # Y = torch.log10(torch.maximum(Y, torch.tensor(1e-10, device=device)))
+        # mean = torch.mean(Y, dim=0)
         
-        # Y = np.log10(np.maximum(Y, 1e-10))
-        # mean = np.mean(Y, axis=0)
+        Y = np.log10(np.maximum(Y, 1e-10))
+        mean = np.mean(Y, axis=0)
         Y = Y - mean
         Y = Y.cpu().numpy()
     elif transform_type == 'logmel23_swn':
@@ -178,9 +187,13 @@ def get_labeledSTFT(audio,
     segments = audio.metadata[a|b]
     # print(f"segments: \n{segments}")
     speaker_ids = segments["spk_id"].unique().tolist()
+    
+    # if len(speaker_ids) > 2:
+        # return None, None
+        
     # print(speaker_ids)
 
-    if n_speakers ==None:
+    if n_speakers == None:
         n_speakers = len(speaker_ids)
     # print(n_speakers)
     # print(f"Y shape: {Y.shape}")
