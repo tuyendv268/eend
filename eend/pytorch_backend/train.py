@@ -122,11 +122,11 @@ def train(args):
                                   args.hidden_size,
                                   warmup_steps=args.noam_warmup_steps)
 
-    args.initmodel = "/home/tuyendv/projects/eend_pytorch/exp_large/models/transformer200.th"
-    # Init/Resume
-    if args.initmodel:
-        logging.info(f"Load model from {args.initmodel}")
-        model.load_state_dict(torch.load(args.initmodel))
+    # args.initmodel = "/home/tuyendv/projects/eend_pytorch/exp_large/models/transformer200.th"
+    # # Init/Resume
+    # if args.initmodel:
+    #     logging.info(f"Load model from {args.initmodel}")
+    #     model.load_state_dict(torch.load(args.initmodel))
 
     train_iter = DataLoader(
             train_set,

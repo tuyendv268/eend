@@ -87,20 +87,20 @@ def transform(
         sr = 8000
         n_mels = 23
         mel_basis = librosa.filters.mel(sr, n_fft, n_mels)
-        Y = np.dot(Y ** 2, mel_basis.T)
+        # Y = np.dot(Y ** 2, mel_basis.T)
         
-        # device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
+        device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
         # print("device: ", device)
-        # tmp_1 = torch.tensor(Y ** 2, device=device, dtype=torch.float)
-        # tmp_2 = torch.tensor(mel_basis.T, device=device, dtype=torch.float)
-        # Y = torch.mm(tmp_1, tmp_2)
+        tmp_1 = torch.tensor(Y ** 2, device=device, dtype=torch.float)
+        tmp_2 = torch.tensor(mel_basis.T, device=device, dtype=torch.float)
+        Y = torch.mm(tmp_1, tmp_2)
         
-        # Y = torch.log10(torch.maximum(Y, torch.tensor(1e-10, device=device)))
-        # mean = torch.mean(Y, dim=0)
+        Y = torch.log10(torch.maximum(Y, torch.tensor(1e-10, device=device)))
+        mean = torch.mean(Y, dim=0)
         
-        Y = np.log10(np.maximum(Y, 1e-10))
-        mean = np.mean(Y, axis=0)
-        Y = Y - mean
+        # Y = np.log10(np.maximum(Y, 1e-10))
+        # mean = np.mean(Y, axis=0)
+        # Y = Y - mean
         Y = Y.cpu().numpy()
     elif transform_type == 'logmel23_swn':
         n_fft = 2 * (Y.shape[1] - 1)

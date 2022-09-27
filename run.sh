@@ -7,8 +7,8 @@ export PYTHONPATH=`pwd`:$PYTHONPATH
 exp_dir=exp_large
 conf_dir=conf/large
 
-train_dir=/home/tuyendv/projects/diarization-data/rttms/dev
-dev_dir=/home/tuyendv/projects/diarization-data/rttms/dev
+train_dir=/home/tuyendv/projects/speaker-diazation/data/test
+dev_dir=/home/tuyendv/projects/speaker-diazation/data/test
 model_dir=$exp_dir/models
 train_conf=$conf_dir/train.yaml
 
