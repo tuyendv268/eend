@@ -52,7 +52,7 @@ def train(args):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     
-    device = torch.device("cuda:0" if (torch.cuda.is_available() and args.gpu > 0) else "cpu")
+    device = torch.device("cuda:1" if (torch.cuda.is_available() and args.gpu > 0) else "cpu")
 
     train_set = DiarizationDataset(
         data_path=args.train_data_dir,
@@ -97,8 +97,10 @@ def train(args):
     else:
         raise ValueError('Possible model_type is "Transformer"')
     
-    device = torch.device("cuda:0" if (torch.cuda.is_available() and args.gpu > 0) else "cpu")
-    if device.type == "cuda":
+    parrallel = True
+    device = torch.device("cuda" if (torch.cuda.is_available()) else "cpu")
+    
+    if parrallel == True:
         model = nn.DataParallel(model, list(range(args.gpu)))
     model = model.to(device)
     logging.info(f'device: {device}')
@@ -132,7 +134,7 @@ def train(args):
             train_set,
             batch_size=args.batchsize,
             shuffle=True,
-            num_workers=2,
+            num_workers=8,
             collate_fn=my_collate
             )
 
@@ -177,12 +179,13 @@ def train(args):
         
         
         model.eval()
+        val_device = "cuda:0"
         with torch.no_grad():
             stats_avg = {}
             cnt = 0
             for y, t in dev_iter:
-                y = [yi.to(device) for yi in y]
-                t = [ti.to(device) for ti in t]
+                y = [yi.to(val_device) for yi in y]
+                t = [ti.to(val_device) for ti in t]
                 output = model(y)
                 _, label = batch_pit_loss(output, t)
                 stats = report_diarization_error(output, label)
@@ -199,6 +202,6 @@ def train(args):
             torch.save(model.state_dict(), model_filename)
 
         logging.info(f"Epoch: {epoch:3d}, LR: {optimizer.param_groups[0]['lr']:.7f},\
-            Training Loss: {loss_epoch:.5f}, Dev Stats: {stats_avg}")
+            \nTraining Loss: {loss_epoch:.5f}, Dev Stats: {stats_avg}")
 
     logging.info('Finished!')

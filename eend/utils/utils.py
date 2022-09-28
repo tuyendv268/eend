@@ -67,7 +67,7 @@ def transform(
         # Y = np.dot(Y ** 2, mel_basis.T)
         # Y = np.log10(np.maximum(Y, 1e-10))
         
-        device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
+        device = torch.device("cuda:1" if (torch.cuda.is_available()) else "cpu")
         # print("device: ", device)
         tmp_1 = torch.tensor(Y ** 2, device=device, dtype=torch.float32)
         tmp_2 = torch.tensor(mel_basis.T, device=device, dtype=torch.float32)
@@ -89,7 +89,7 @@ def transform(
         mel_basis = librosa.filters.mel(sr, n_fft, n_mels)
         # Y = np.dot(Y ** 2, mel_basis.T)
         
-        device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
+        device = torch.device("cuda:1" if (torch.cuda.is_available()) else "cpu")
         # print("device: ", device)
         tmp_1 = torch.tensor(Y ** 2, device=device, dtype=torch.float)
         tmp_2 = torch.tensor(mel_basis.T, device=device, dtype=torch.float)
@@ -188,8 +188,8 @@ def get_labeledSTFT(audio,
     # print(f"segments: \n{segments}")
     speaker_ids = segments["spk_id"].unique().tolist()
     
-    # if len(speaker_ids) > 2:
-        # return None, None
+    if len(speaker_ids) > 4:
+        return [], []
         
     # print(speaker_ids)
 

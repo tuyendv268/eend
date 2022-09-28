@@ -36,7 +36,6 @@ class DiarizationDataset(Dataset):
         self.init_chunks()
         
         self.Y, self.T = self.preprocess_data()
-        self.datas = None
         
     def init_chunks(self):
         self.chunk_indices = []
@@ -66,31 +65,37 @@ class DiarizationDataset(Dataset):
         print("------------- preprocess data -------------")
         for index in tqdm(range(len(self.chunk_indices))):
             Y_ss, T_ss = self.getchunk(index)
-            # if Y_ss == None or T_ss == None:
-            #     continue
+            
+            if len(Y_ss) == 0 or len(T_ss) == 0:
+                print("ignore")
+                continue
+            
             Y.append(Y_ss)
             T.append(T_ss)            
         print("-------------- done ---------------")
-
-        return torch.tensor(Y).float(), torch.tensor(T).float()
+        
+        self.chunk_indices = None
+        self.datas = None
+        
+        return torch.tensor(Y).float(), torch.tensor(T, dtype=torch.int8)
     
     def __len__(self):
         return len(self.Y)
     
     def __getitem__(self, index):
-        return self.Y[index], self.T[index]
+        return self.Y[index], self.T[index].float()
     
     def getchunk(self, i):
         key, st, ed = self.chunk_indices[i]
-        Y, T = get_labeledSTFT(
-            self.datas.audios[key],
-            st,
-            ed,
-            self.frame_size,
-            self.frame_shift,
-            self.n_speakers)
-        # if Y == None or T == None:
-        #     return None, None
+        Y, T = get_labeledSTFT(self.datas.audios[key],
+                               st,
+                               ed,
+                               self.frame_size,
+                               self.frame_shift,
+                               self.n_speakers)
+        
+        if len(Y) == 0 or len(T) == 0:
+            return [], []
         # Y: (frame, num_ceps)
         Y = transform(Y,self.input_transform)
         # Y_spliced: (frame, num_ceps * (context_size * 2 + 1))
